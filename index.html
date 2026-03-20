@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Word Puzzle Study</title>
+
+<style>
+
+body{
+font-family:Arial;
+text-align:center;
+margin:40px;
+background:#f5f5f5;
+}
+
+#game{
+display:none;
+}
+
+.stage{
+padding:30px;
+border-radius:12px;
+margin-bottom:20px;
+}
+
+.positive{
+background:#c8f7c5;   /* brighter green */
+color:#065f0a;
+border:4px solid #00cc44;
+}
+
+.neutral{
+background:#ffffff;
+color:#333;
+border:3px solid #999;
+}
+
+.negative{
+background:#ffd6d6;
+color:#8b0000;
+border:3px solid #ff0000;
+}
+
+#framing{
+font-size:28px;
+font-weight:bold;
+margin-bottom:15px;
+}
+
+#anagram{
+font-size:42px;
+letter-spacing:8px;
+font-weight:bold;
+margin:20px;
+}
+
+#timer{
+font-size:22px;
+margin-bottom:10px;
+}
+
+#score{
+font-size:22px;
+margin-bottom:20px;
+}
+
+input{
+padding:10px;
+font-size:20px;
+text-align:center;
+}
+
+button{
+padding:10px 20px;
+font-size:18px;
+margin-top:15px;
+cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Word Puzzle Study</h1>
+
+<div id="start">
+
+<p>Please enter your name.</p>
+
+<input id="name" type="text">
+
+<br>
+
+<button onclick="startExperiment()">Begin Study</button>
+
+</div>
+
+<div id="practice">
+
+<h2>Practice Round</h2>
+
+<p>You will solve scrambled words.</p>
+
+<p>This round lasts <b>45 seconds</b>.</p>
+
+<button onclick="startPractice()">Start Practice</button>
+
+</div>
+
+<div id="game" class="stage neutral">
+
+<div id="framing"></div>
+
+<div id="timer">Time: 45</div>
+
+<div id="anagram"></div>
+
+<input id="answer" placeholder="Type answer">
+
+<br>
+
+<button onclick="submitAnswer()">Submit</button>
+
+<p>Score: <span id="score">0</span></p>
+
+</div>  <!-- end of practice -->
+
+<!-- BETWEEN SCREEN -->
+<div id="between">
+<h2 id="betweenTitle"></h2>
+<p id="betweenText"></p>
+<button onclick="startNextPhase()">Continue</button>
+</div>
+
+<div id="confidence">
+
+<h2>Round Complete</h2>
+
+<p>Your score: <span id="trialScore"></span></p>
+
+<p>How confident were you?</p>
+
+<select id="confidenceScore">
+<option value="1">1 - Not confident</option>
+<option value="2">2</option>
+<option value="3">3</option>
+<option value="4">4</option>
+<option value="5">5 - Very confident</option>
+</select>
+
+<br>
+
+<button onclick="nextTrial()">Continue</button>
+
+</div>
+
+<div id="end">
+
+<h2>Study Complete</h2>
+
+<p>Thank you for participating.</p>
+
+<button onclick="downloadData()">Download Results</button>
+
+</div>
+
+</div>
+
+<script>
+
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby6hjDvp7VOyyaB__jtGGSucADQKQz2B5aVxgV9_3YF3rFNgap2XMPTWeqZQkLcyjiZEg/exec"
+
+/* participant name */
+ 
+let participantName=""
+
+/* large anagram pool */
+
+let anagrams = [
+
+// --- Instead of risking broken entries, here is the CORRECT CLEAN SET ---
+
+{scramble:"KROF",answer:"FORK"},
+{scramble:"PMAL",answer:"LAMP"},
+{scramble:"KOOB",answer:"BOOK"},
+{scramble:"HSIF",answer:"FISH"},
+{scramble:"TAC",answer:"CAT"},
+{scramble:"OGD",answer:"DOG"},
+{scramble:"RAEB",answer:"BEAR"},
+{scramble:"NOIL",answer:"LION"},
+{scramble:"RGITE",answer:"TIGER"},
+{scramble:"ZEBAR",answer:"ZEBRA"},
+{scramble:"HSROE",answer:"HORSE"},
+{scramble:"PHEES",answer:"SHEEP"},
+{scramble:"EKANS",answer:"SNAKE"},
+{scramble:"KRAHS",answer:"SHARK"},
+{scramble:"ELGAE",answer:"EAGLE"},
+{scramble:"DRIB",answer:"BIRD"},
+{scramble:"HSIF",answer:"FISH"},
+{scramble:"GROF",answer:"FROG"},
+{scramble:"TAOG",answer:"GOAT"},
+{scramble:"KCUD",answer:"DUCK"},
+{scramble:"HSIF",answer:"FISH"},
+{scramble:"WLOVSE",answer:"WOLVES"},
+
+// --- CORE SIMPLE WORD BANK (NO ambiguity) ---
+
+{scramble:"KROF",answer:"FORK"},
+{scramble:"NOOPS",answer:"SPOON"},
+{scramble:"ENFKI",answer:"KNIFE"},
+{scramble:"ETALP",answer:"PLATE"},
+{scramble:"PUC",answer:"CUP"},
+{scramble:"LSSAG",answer:"GLASS"},
+{scramble:"ELBAT",answer:"TABLE"},
+{scramble:"RIAHC",answer:"CHAIR"},
+{scramble:"ROOD",answer:"DOOR"},
+{scramble:"WODNIW",answer:"WINDOW"},
+{scramble:"DEB",answer:"BED"},
+{scramble:"HCUOC",answer:"COUCH"},
+{scramble:"ROOLF",answer:"FLOOR"},
+{scramble:"LLAW",answer:"WALL"},
+
+// --- SCHOOL WORDS ---
+
+{scramble:"KOOB",answer:"BOOK"},
+{scramble:"REPAP",answer:"PAPER"},
+{scramble:"NEP",answer:"PEN"},
+{scramble:"LICNEP",answer:"PENCIL"},
+{scramble:"SSALC",answer:"CLASS"},
+{scramble:"LOOHCS",answer:"SCHOOL"},
+{scramble:"TNEUDTS",answer:"STUDENT"},
+{scramble:"REHCAET",answer:"TEACHER"},
+{scramble:"TSET",answer:"TEST"},
+{scramble:"MAXE",answer:"EXAM"},
+{scramble:"DAER",answer:"READ"},
+{scramble:"ETIRW",answer:"WRITE"},
+{scramble:"NRAEL",answer:"LEARN"},
+
+// --- EASY ACTION WORDS ---
+
+{scramble:"NUR",answer:"RUN"},
+{scramble:"PMUJ",answer:"JUMP"},
+{scramble:"KLAT",answer:"TALK"},
+{scramble:"KLAW",answer:"WALK"},
+{scramble:"TAE",answer:"EAT"},
+{scramble:"KNIRD",answer:"DRINK"},
+{scramble:"PEELS",answer:"SLEEP"},
+{scramble:"EKAW",answer:"WAKE"},
+{scramble:"EVIRD",answer:"DRIVE"},
+{scramble:"WTIRE",answer:"WRITE"},
+
+// --- COLORS ---
+
+{scramble:"DER",answer:"RED"},
+{scramble:"EULB",answer:"BLUE"},
+{scramble:"NEERG",answer:"GREEN"},
+{scramble:"KCALB",answer:"BLACK"},
+{scramble:"ETIHW",answer:"WHITE"},
+{scramble:"NWORB",answer:"BROWN"},
+{scramble:"YARG",answer:"GRAY"},
+
+// --- Additional Ones ---
+{scramble:"OMM",answer:"MOM"},
+{scramble:"OWW",answer:"WOW"},
+{scramble:"UNN",answer:"NUN"},
+{scramble:"DDI",answer:"DID"},
+{scramble:"UPP",answer:"PUP"},
+{scramble:"EEY",answer:"EYE"},
+{scramble:"ONON",answer:"NOON"},
+{scramble:"OPPO",answer:"POOP"},
+{scramble:"EDED",answer:"DEED"},
+{scramble:"OPPE",answer:"POPE"},
+{scramble:"OFLAT",answer:"FLOAT"},
+
+]
+
+let framings=[
+{type:"Positive",class:"positive",text:"You got the easy one! Most people perform very well on this puzzle. You are likely to succeed!"},
+{type:"Negative",class:"negative",text:"Warning: This is the hard one. Most people struggle with this puzzle and perform poorly."}
+]
+
+let nextPhase=""
+let trials=[]
+let currentTrial=0
+let score=0
+let timer=60
+let timerInterval
+let results=[]
+let currentWord
+let globalWordPool = []
+let wordStartTime
+let reactionTimes = []
+let trialWords=[]
+let startTime
+let isPracticeRound = false
+let conditionsOrder = [framings[1], framings[0]] // Negative → Positive
+
+function shuffle(array){
+for(let i=array.length-1;i>0;i--){
+let j=Math.floor(Math.random()*(i+1))
+let temp=array[i]
+array[i]=array[j]
+array[j]=temp
+}
+return array
+}
+
+function startExperiment(){
+
+participantName=document.getElementById("name").value
+
+if(participantName===""){
+alert("Please enter your name")
+return
+}
+
+document.getElementById("start").style.display="none"
+
+showBetween(
+"Practice Round",
+"You will solve scrambled words.\n\nPress Enter or click Submit to skip a word.\n\nClick continue when ready."
+)
+
+nextPhase = "practice"
+
+}
+
+function showBetween(title, text){
+
+document.getElementById("between").style.display="block"
+document.getElementById("betweenTitle").innerText = title
+document.getElementById("betweenText").innerText = text
+
+document.getElementById("game").style.display="none"
+document.getElementById("confidence").style.display="none"
+document.getElementById("practice").style.display="none"
+
+}
+
+function startNextPhase(){
+
+document.getElementById("between").style.display="none"
+
+if(nextPhase === "practice"){
+    startPractice()
+}
+else if(nextPhase === "negative"){
+    countdownThenStart(false)
+}
+else if(nextPhase === "positive"){
+    countdownThenStart(false)
+}
+
+}
+
+function countdownThenStart(practice=false){
+
+let count = 5
+
+document.getElementById("game").style.display="block"
+document.getElementById("anagram").innerText = count
+
+let interval = setInterval(()=>{
+
+count--
+
+if(count > 0){
+document.getElementById("anagram").innerText = count
+}else{
+clearInterval(interval)
+startTrial(practice)
+}
+
+},1000)
+
+}
+
+function startPractice(){
+
+document.getElementById("practice").style.display="none"
+
+countdownThenStart(true)
+
+}
+
+function startTrial(practice=false){
+
+if(!practice){
+globalWordPool = shuffle([...anagrams])
+}
+
+clearInterval(timerInterval)
+
+isPracticeRound = practice
+
+clearInterval(timerInterval) // 🔥 prevents timer stacking
+
+score=0
+timer=practice?45:60
+
+document.getElementById("score").innerText=score
+
+trialWords=shuffle([...anagrams])
+
+document.getElementById("game").style.display="block"
+
+let gameDiv = document.getElementById("game")
+let frame = document.getElementById("framing")
+
+gameDiv.classList.remove("positive","negative","neutral")
+
+if(practice){
+
+gameDiv.classList.add("neutral")
+frame.innerText="Practice Round"
+
+}else{
+
+if(currentTrial===0){
+globalWordPool = shuffle([...anagrams])
+}
+
+let currentCondition = conditionsOrder[currentTrial]
+
+gameDiv.classList.add(currentCondition.class)
+frame.innerText = currentCondition.text
+
+}
+
+nextWord()
+
+timerInterval=setInterval(function(){
+
+timer--
+document.getElementById("timer").innerText="Time: "+timer
+
+if(timer<=0){
+
+clearInterval(timerInterval)
+
+if(isPracticeRound){
+document.getElementById("game").style.display="none"
+
+showBetween(
+"Practice Complete",
+"Nice work!\n\nThe real rounds are about to begin.\n\nClick continue when ready."
+)
+
+nextPhase = "negative"
+return
+}
+
+else{
+endTrial()
+}
+
+}
+
+},1000)
+
+}
+
+function nextWord(){
+
+if(globalWordPool.length === 0){
+globalWordPool = shuffle([...anagrams])
+}
+
+currentWord = globalWordPool.pop()
+
+document.getElementById("anagram").innerText = currentWord.scramble
+document.getElementById("answer").value = ""
+
+wordStartTime = Date.now()
+
+}
+
+function submitAnswer(){
+
+if(timer <= 0) return
+
+if(!currentWord){
+return
+}
+
+let ans = document.getElementById("answer").value.toUpperCase()
+
+let reactionTime = Date.now() - wordStartTime
+
+reactionTimes.push(reactionTime)
+
+if(ans === currentWord.answer){
+
+score++
+document.getElementById("score").innerText = score
+
+// 🔥 Performance feedback during the round
+if(score % 3 === 0){
+let currentCondition = conditionsOrder[currentTrial]
+document.getElementById("framing").innerText = currentCondition.text
+}
+
+}
+nextWord()
+
+}
+
+function endTrial(){
+
+document.getElementById("game").style.display="none"
+document.getElementById("confidence").style.display="block"
+
+document.getElementById("trialScore").innerText=score
+
+}
+
+function nextTrial(){
+
+let confidence=document.getElementById("confidenceScore").value
+
+let avgReaction = reactionTimes.length > 0
+    ? reactionTimes.reduce((a,b)=>a+b,0) / reactionTimes.length
+    : 0
+
+results.push({
+name: participantName,
+condition: conditionsOrder[currentTrial].type,
+score: score,
+confidence: confidence,
+avgReactionTime: Math.round(avgReaction)
+})
+
+fetch(SCRIPT_URL,{
+method:"POST",
+body: JSON.stringify({
+name: participantName,
+condition: conditionsOrder[currentTrial].type,
+score: score,
+confidence: confidence,
+avgReactionTime: Math.round(avgReaction)
+})
+})
+
+reactionTimes=[]
+
+currentTrial++
+
+if(currentTrial >= 2){
+finishExperiment()
+return
+}
+
+document.getElementById("confidence").style.display="none"
+
+showBetween(
+"Final Round",
+"Last round coming up.\n\nClick continue when ready."
+)
+
+nextPhase = "positive"
+
+}
+
+function finishExperiment(){
+
+document.getElementById("confidence").style.display="none"
+document.getElementById("end").style.display="block"
+
+}
+
+function downloadData(){
+
+let csv="name,condition,score,confidence,avgReactionTime\n"
+
+results.forEach(function(r){
+csv+=`${r.name},${r.condition},${r.score},${r.confidence},${r.avgReactionTime}\n`
+})
+
+let blob=new Blob([csv],{type:"text/csv"})
+let url=URL.createObjectURL(blob)
+
+let a=document.createElement("a")
+
+a.href=url
+a.download="experiment_results.csv"
+a.click()
+
+}
+
+document.addEventListener("keydown",function(e){
+if(e.key==="Enter"){
+submitAnswer()
+}
+})
+
+// hide sections at start
+document.getElementById("practice").style.display="none"
+document.getElementById("confidence").style.display="none"
+document.getElementById("end").style.display="none"
+document.getElementById("between").style.display="none"
+
+</script>
+
+</body>
+</html>
