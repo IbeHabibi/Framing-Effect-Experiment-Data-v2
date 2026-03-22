@@ -427,7 +427,7 @@ let reactionTimes = []
 let trialWords=[]
 let startTime
 let isPracticeRound = false
-let conditionsOrder = [framings[1], framings[0]] // Negative → Positive
+let conditionsOrder = []
 
 function shuffle(array){
 for(let i=array.length-1;i>0;i--){
@@ -478,10 +478,7 @@ document.getElementById("between").style.display="none"
 if(nextPhase === "practice"){
     startPractice()
 }
-else if(nextPhase === "negative"){
-    countdownThenStart(false)
-}
-else if(nextPhase === "positive"){
+else{
     countdownThenStart(false)
 }
 
@@ -580,7 +577,9 @@ showBetween(
 "Nice work!\n\nThe real rounds are about to begin.\n\nClick continue when ready."
 )
 
-nextPhase = "negative"
+// Randomize the order of framing conditions
+conditionsOrder = shuffle([...framings])
+nextPhase = conditionsOrder[0].type
 return
 }
 
@@ -629,7 +628,7 @@ score++
 document.getElementById("score").innerText = score
 
 // 🔥 Performance feedback during the round
-if(score % 3 === 0){
+if(score % 3 === 0 && !isPracticeRound){
 let currentCondition = conditionsOrder[currentTrial]
 document.getElementById("framing").innerText = currentCondition.text
 }
@@ -691,7 +690,7 @@ showBetween(
 "Last round coming up.\n\nClick continue when ready."
 )
 
-nextPhase = "positive"
+nextPhase = conditionsOrder[1].type
 
 }
 
